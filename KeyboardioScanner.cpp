@@ -141,7 +141,7 @@ bool KeyboardioScanner::moreKeysWaiting() {
 // gives information on the key that was just pressed or released.
 bool KeyboardioScanner::readKeys() {
 
-  uint8_t rxBuffer[5];
+  uint8_t rxBuffer[6];
 
   // perform blocking read into buffer
   uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
@@ -150,6 +150,7 @@ bool KeyboardioScanner::readKeys() {
     keyData.rows[1] = rxBuffer[2];
     keyData.rows[2] = rxBuffer[3];
     keyData.rows[3] = rxBuffer[4];
+    keyData.rows[4] = rxBuffer[5];
     return true;
   } else {
     return false;

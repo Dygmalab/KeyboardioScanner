@@ -32,10 +32,15 @@ typedef union {
   uint8_t val;
 } key_t;
 
-
+/*
 typedef union {
   uint8_t rows[4];
   uint32_t all;
+} keydata_t;
+*/
+typedef union {
+  uint8_t rows[5];
+  uint64_t all;
 } keydata_t;
 
 // config options
