@@ -175,6 +175,11 @@ void KeyboardioScanner::sendLEDBank(byte bank) {
     data[i + 1] = pgm_read_byte(&gamma8[ledData.bytes[bank][i]]);
   }
   uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
+  if( result == 4 )
+  {
+    twi_disable();
+    twi_init();
+  }
 }
 
 

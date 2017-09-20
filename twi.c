@@ -67,7 +67,11 @@ static volatile uint8_t twi_rxBufferIndex;
 
 static volatile uint8_t twi_error;
 
-/*
+#define TIMEOUT 100000
+static volatile uint64_t timeout = 0;
+
+
+/* 
  * Function twi_init
  * Desc     readys twi pins and sets twi bitrate
  * Input    none
@@ -160,9 +164,12 @@ uint8_t twi_readFrom(uint8_t address, uint8_t* data, uint8_t length, uint8_t sen
     return 0;
   }
 
+  timeout = 0;
   // wait until twi is ready, become master receiver
-  while (TWI_READY != twi_state) {
-    continue;
+  while(TWI_READY != twi_state){
+    timeout ++;
+    if( timeout > TIMEOUT )
+        return 0;
   }
   twi_state = TWI_MRX;
   twi_sendStop = sendStop;
@@ -199,7 +206,10 @@ uint8_t twi_readFrom(uint8_t address, uint8_t* data, uint8_t length, uint8_t sen
     TWCR = _BV(TWEN) | _BV(TWIE) | _BV(TWEA) | _BV(TWINT) | _BV(TWSTA);
 
   // wait for read operation to complete
-  while (TWI_MRX == twi_state) {
+  timeout = 0;
+  while(TWI_MRX == twi_state){
+    if(timeout ++ > TIMEOUT )
+        return 0;
     continue;
   }
 
@@ -237,9 +247,12 @@ uint8_t twi_writeTo(uint8_t address, uint8_t* data, uint8_t length, uint8_t wait
     return 1;
   }
 
+  timeout = 0;
   // wait until twi is ready, become master transmitter
-  while (TWI_READY != twi_state) {
-    continue;
+  while(TWI_READY != twi_state){
+    timeout ++;
+    if(timeout > TIMEOUT )
+        return 4; // other error
   }
   twi_state = TWI_MTX;
   twi_sendStop = sendStop;
@@ -279,7 +292,10 @@ uint8_t twi_writeTo(uint8_t address, uint8_t* data, uint8_t length, uint8_t wait
     TWCR = _BV(TWINT) | _BV(TWEA) | _BV(TWEN) | _BV(TWIE) | _BV(TWSTA);	// enable INTs
 
   // wait for write operation to complete
-  while (wait && (TWI_MTX == twi_state)) {
+  timeout = 0;
+  while(wait && (TWI_MTX == twi_state)){
+    if(timeout ++ > TIMEOUT )
+        return 4; // other error
     continue;
   }
 
@@ -374,8 +390,11 @@ void twi_stop(void) {
 
   // wait for stop condition to be exectued on bus
   // TWINT is not set after a stop condition!
-  while (TWCR & _BV(TWSTO)) {
-    continue;
+  timeout = 0;
+  while(TWCR & _BV(TWSTO)){
+    timeout ++;
+    if( timeout > TIMEOUT )
+        break;
   }
 
   // update twi state
