@@ -9,13 +9,15 @@ struct cRGB {
   uint8_t r;
 };
 
-#define LED_BANKS 4
+#define LED_BANKS 9
 
-#define LEDS_PER_HAND 32
-#define LED_BYTES_PER_BANK sizeof(cRGB)  * LEDS_PER_HAND/LED_BANKS
+#define LEDS_PER_HAND 36
+#define LEDS_PER_UNDERGLOW 35
+#define LED_BYTES_PER_BANK 24 
+//sizeof(cRGB)  * (LEDS_PER_HAND+LEDS_PER_UNDERGLOW)/LED_BANKS
 
 typedef union {
-  cRGB leds[LEDS_PER_HAND];
+  cRGB leds[LEDS_PER_HAND+LEDS_PER_UNDERGLOW];
   byte bytes[LED_BANKS][LED_BYTES_PER_BANK];
 } LEDData_t;
 
