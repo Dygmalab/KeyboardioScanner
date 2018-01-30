@@ -3,6 +3,7 @@
 #include <Arduino.h>
 #include "wire-protocol-constants.h"
 
+
 struct cRGB {
   uint8_t r;
   uint8_t g;
@@ -32,7 +33,7 @@ typedef union {
             eventReported: 1;
   };
   uint8_t val;
-} key_t;
+} key_t_raise;
 
 /*
 typedef union {
