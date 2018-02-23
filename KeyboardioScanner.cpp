@@ -9,6 +9,50 @@
 
 uint8_t twi_uninitialized = 1;
 
+
+#ifdef __SAMD21G18A__
+	#define I2C_ERROR	(1)
+	#define I2C_OK		(0)
+	// just for reference. On Arduino Zero there are following I2C pins:
+	// PIN_WIRE_SDA         (20u)
+	// PIN_WIRE_SCL         (21u)
+	uint8_t twi_writeTo(uint8_t addr, uint8_t* pData, size_t length, uint8_t blockingFlag, uint8_t stopFlag) {
+		//in fact we always send data in blocking mode. In case of error return 1.
+		Wire.beginTransmission(addr); // transmit to device addr
+		if(!Wire.write(pData, length)) return I2C_ERROR; // sends data
+		if(!Wire.endTransmission(stopFlag)) return I2C_ERROR;// stop transmitting
+		return I2C_OK;
+	}
+	
+	uint8_t twi_readFrom(uint8_t addr, uint8_t* pData, size_t length, uint8_t stopFlag) {
+		uint8_t counter = 0;
+		uint32_t timeout;
+		
+		if(!Wire.requestFrom(addr, length, stopFlag)){
+			//in case slave is not responding - return 0 (0 length of received data).
+			return 0;
+		}
+		while(Wire.available() && (length > 0))    // slave may send less than requested
+		{ 
+			// receive a byte in blocking mode
+			*pData = Wire.read(); 
+			pData++;
+			length--;
+			counter++;
+		}
+		return counter;
+	}
+	
+	void twi_disable(void)
+	{
+		Wire.end();
+	}
+	void twi_init(void)
+	{
+		Wire.begin();
+	}
+#endif
+
 const uint8_t PROGMEM gamma8[] = {
   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
   0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  1,  1,  1,  1,
@@ -36,11 +80,11 @@ KeyboardioScanner::KeyboardioScanner(byte setAd01) {
   // keyReady will be true after a read when there's another key event
   // already waiting for us
   keyReady = false;
-  /*
+  
   if (twi_uninitialized--) {
     twi_init();
   }
-  */
+  
 }
 
 // Returns the relative controller addresss. The expected range is 0-3
@@ -67,9 +111,7 @@ uint8_t KeyboardioScanner::controllerAddress() {
 // https://www.arduino.cc/en/Reference/WireEndTransmission
 byte KeyboardioScanner::setKeyscanInterval(byte delay) {
   uint8_t data[] = {TWI_CMD_KEYSCAN_INTERVAL, delay};
-//  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
-  uint8_t result = 0; 
-
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
   return result;
 }
 
@@ -99,9 +141,7 @@ int KeyboardioScanner::readLEDSPIFrequency() {
 // https://www.arduino.cc/en/Reference/WireEndTransmission
 byte KeyboardioScanner::setLEDSPIFrequency(byte frequency) {
   uint8_t data[] = {TWI_CMD_LED_SPI_FREQUENCY, frequency};
-//  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
-  uint8_t result = 0; 
-
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
   return result;
 }
 
@@ -112,10 +152,7 @@ int KeyboardioScanner::readRegister(uint8_t cmd) {
   byte return_value = 0;
 
   uint8_t data[] = {cmd};
-  //uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
-  uint8_t result = 0;
-
-
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
 
   delayMicroseconds(15); // We may be able to drop this in the future
   // but will need to verify with correctly
@@ -125,8 +162,7 @@ int KeyboardioScanner::readRegister(uint8_t cmd) {
   uint8_t rxBuffer[1];
 
   // perform blocking read into buffer
-  uint8_t read = 0;
-  //uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
+  uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
   if (read > 0) {
     return rxBuffer[0];
   } else {
@@ -148,8 +184,7 @@ bool KeyboardioScanner::readKeys() {
   uint8_t rxBuffer[6];
 
   // perform blocking read into buffer
-  //uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
-  uint8_t read = 0;
+  uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
   if (rxBuffer[0] == TWI_REPLY_KEYDATA) {
     keyData.rows[0] = rxBuffer[1];
     keyData.rows[1] = rxBuffer[2];
@@ -179,12 +214,11 @@ void KeyboardioScanner::sendLEDBank(byte bank) {
   for (uint8_t i = 0 ; i < LED_BYTES_PER_BANK; i++) {
     data[i + 1] = pgm_read_byte(&gamma8[ledData.bytes[bank][i]]);
   }
-//  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
-  uint8_t result = 0;
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
   if( result == 4 )
   {
-    //twi_disable();
-    //twi_init();
+    twi_disable();
+    twi_init();
   }
 }
 
@@ -196,7 +230,7 @@ void KeyboardioScanner::setAllLEDsTo(cRGB color) {
                     pgm_read_byte(&gamma8[color.g]),
                     pgm_read_byte(&gamma8[color.b])
                    };
-//  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
 }
 
 void KeyboardioScanner::setOneLEDTo(byte led, cRGB color) {
@@ -206,7 +240,7 @@ void KeyboardioScanner::setOneLEDTo(byte led, cRGB color) {
                     pgm_read_byte(&gamma8[color.g]),
                     pgm_read_byte(&gamma8[color.b])
                    };
-//  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
 
 }
 
