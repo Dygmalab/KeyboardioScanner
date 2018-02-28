@@ -13,29 +13,30 @@ uint8_t twi_uninitialized = 1;
 #ifdef __SAMD21G18A__
 	#define I2C_ERROR	(1)
 	#define I2C_OK		(0)
+    #include "wiring_private.h" // pinPeripheral() function
+    TwoWire Wire2(&sercom2, 4, 3);
 	// just for reference. On Arduino Zero there are following I2C pins:
 	// PIN_WIRE_SDA         (20u)
 	// PIN_WIRE_SCL         (21u)
 	uint8_t twi_writeTo(uint8_t addr, uint8_t* pData, size_t length, uint8_t blockingFlag, uint8_t stopFlag) {
 		//in fact we always send data in blocking mode. In case of error return 1.
-		Wire.beginTransmission(addr); // transmit to device addr
-		if(!Wire.write(pData, length)) return I2C_ERROR; // sends data
-		if(!Wire.endTransmission(stopFlag)) return I2C_ERROR;// stop transmitting
+		Wire2.beginTransmission(addr); // transmit to device addr
+		if(!Wire2.write(pData, length)) return I2C_ERROR; // sends data
+		if(!Wire2.endTransmission(stopFlag)) return I2C_ERROR;// stop transmitting
 		return I2C_OK;
 	}
 	
 	uint8_t twi_readFrom(uint8_t addr, uint8_t* pData, size_t length, uint8_t stopFlag) {
 		uint8_t counter = 0;
 		uint32_t timeout;
-		
-		if(!Wire.requestFrom(addr, length, stopFlag)){
+		if(!Wire2.requestFrom(addr, length, stopFlag)){
 			//in case slave is not responding - return 0 (0 length of received data).
 			return 0;
 		}
-		while(Wire.available() && (length > 0))    // slave may send less than requested
+		while(Wire2.available() && (length > 0))    // slave may send less than requested
 		{ 
 			// receive a byte in blocking mode
-			*pData = Wire.read(); 
+			*pData = Wire2.read(); 
 			pData++;
 			length--;
 			counter++;
@@ -45,11 +46,15 @@ uint8_t twi_uninitialized = 1;
 	
 	void twi_disable(void)
 	{
-		Wire.end();
+		Wire2.end();
 	}
-	void twi_init(void)
+	void twi_init()
 	{
-		Wire.begin();
+        Wire2.begin(); // fails here
+        // Assign pins 4 & 3 to SERCOM functionality
+        // pa08 is sda, pa09 is clk
+        pinPeripheral(4, PIO_SERCOM_ALT);
+        pinPeripheral(3, PIO_SERCOM_ALT);
 	}
 #endif
 
@@ -81,10 +86,10 @@ KeyboardioScanner::KeyboardioScanner(byte setAd01) {
   // already waiting for us
   keyReady = false;
   
-  if (twi_uninitialized--) {
+/*  if (twi_uninitialized--) {
     twi_init();
   }
-  
+ */ 
 }
 
 // Returns the relative controller addresss. The expected range is 0-3

@@ -3,6 +3,9 @@
 #include <Arduino.h>
 #include "wire-protocol-constants.h"
 
+#ifdef __SAMD21G18A__
+	void twi_init(); // allow to be called by the Raise hardware setup
+#endif
 
 struct cRGB {
   uint8_t r;
