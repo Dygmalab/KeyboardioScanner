@@ -55,6 +55,7 @@ uint8_t twi_uninitialized = 1;
         // pa08 is sda, pa09 is clk
         pinPeripheral(4, PIO_SERCOM_ALT);
         pinPeripheral(3, PIO_SERCOM_ALT);
+        Wire2.setClock(400000);
 	}
 #endif
 
