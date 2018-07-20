@@ -131,12 +131,10 @@ int KeyboardioScanner::readRegister(uint8_t cmd) {
   byte return_value = 0;
 
   uint8_t data[] = {cmd};
-  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1); // needed to change stopFlag to 1 to get responses from the tiny
 
-  delayMicroseconds(15); // We may be able to drop this in the future
-  // but will need to verify with correctly
-  // sized pull-ups on both the left and right
-  // hands' i2c SDA and SCL lines
+  // needs to be long enough for the slave to respond
+  delayMicroseconds(100); 
 
   uint8_t rxBuffer[1];
 
