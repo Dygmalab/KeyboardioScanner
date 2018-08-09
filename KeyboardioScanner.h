@@ -77,6 +77,7 @@ class KeyboardioScanner {
   ~KeyboardioScanner();
 
   int readVersion();
+  int readSLEDVersion();
 
   byte setKeyscanInterval(byte delay);
   int readKeyscanInterval();

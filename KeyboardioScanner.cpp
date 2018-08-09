@@ -102,6 +102,11 @@ int KeyboardioScanner::readVersion() {
   return readRegister(TWI_CMD_VERSION);
 }
 
+// returns -1 on error, otherwise returns the scanner version integer
+int KeyboardioScanner::readSLEDVersion() {
+  return readRegister(TWI_CMD_SLED_STATUS);
+}
+
 // returns -1 on error, otherwise returns the scanner keyscan interval
 int KeyboardioScanner::readKeyscanInterval() {
   return readRegister(TWI_CMD_KEYSCAN_INTERVAL);
