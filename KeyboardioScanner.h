@@ -78,6 +78,7 @@ class KeyboardioScanner {
 
   int readVersion();
   int readSLEDVersion();
+  int readJoint();
 
   byte setKeyscanInterval(byte delay);
   int readKeyscanInterval();

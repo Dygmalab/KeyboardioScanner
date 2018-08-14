@@ -103,6 +103,11 @@ int KeyboardioScanner::readVersion() {
 }
 
 // returns -1 on error, otherwise returns the scanner version integer
+int KeyboardioScanner::readJoint() {
+  return readRegister(TWI_CMD_JOINED);
+}
+
+// returns -1 on error, otherwise returns the scanner version integer
 int KeyboardioScanner::readSLEDVersion() {
   return readRegister(TWI_CMD_SLED_STATUS);
 }
