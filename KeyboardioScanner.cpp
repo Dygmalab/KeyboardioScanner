@@ -171,8 +171,12 @@ bool KeyboardioScanner::readKeys() {
   uint8_t rxBuffer[6];
 
   // perform blocking read into buffer
-  uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
-  if (rxBuffer[0] == TWI_REPLY_KEYDATA) {
+  uint8_t result = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
+  if( result == 0 )
+  {
+    twi_disable();
+    twi_init();
+  } else if (rxBuffer[0] == TWI_REPLY_KEYDATA) {
     keyData.rows[0] = rxBuffer[1];
     keyData.rows[1] = rxBuffer[2];
     keyData.rows[2] = rxBuffer[3];
@@ -202,7 +206,7 @@ void KeyboardioScanner::sendLEDBank(byte bank) {
     data[i + 1] = pgm_read_byte(&gamma8[ledData.bytes[bank][i]]);
   }
   uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
-  if( result == 4 )
+  if( result == 1 )
   {
     twi_disable();
     twi_init();
