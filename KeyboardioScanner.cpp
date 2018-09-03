@@ -102,9 +102,25 @@ int KeyboardioScanner::readVersion() {
   return readRegister(TWI_CMD_VERSION);
 }
 
-// returns -1 on error, otherwise returns the scanner version integer
+// returns -1 on error, otherwise returns the value of the hall sensor integer
 int KeyboardioScanner::readJoint() {
-  return readRegister(TWI_CMD_JOINED);
+  byte return_value = 0;
+
+  uint8_t data[] = {TWI_CMD_JOINED};
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1); // needed to change stopFlag to 1 to get responses from the tiny
+
+  // needs to be long enough for the slave to respond
+  delayMicroseconds(100); 
+
+  uint8_t rxBuffer[2];
+
+  // perform blocking read into buffer
+  uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
+  if (read > 0) {
+    return rxBuffer[0] + (rxBuffer[1] << 8);
+  } else {
+    return -1;
+  }
 }
 
 // returns -1 on error, otherwise returns the scanner version integer
