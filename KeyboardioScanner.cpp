@@ -133,6 +133,10 @@ int KeyboardioScanner::readKeyscanInterval() {
   return readRegister(TWI_CMD_KEYSCAN_INTERVAL);
 }
 
+// returns -1 on error, otherwise returns the ANSI/ISO setting
+int KeyboardioScanner::readANSI_ISO() {
+  return readRegister(TWI_CMD_ANSI_ISO);
+}
 
 // returns -1 on error, otherwise returns the LED SPI Frequncy
 int KeyboardioScanner::readLEDSPIFrequency() {
