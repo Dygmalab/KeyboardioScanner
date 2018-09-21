@@ -116,7 +116,7 @@ int KeyboardioScanner::readJoint() {
 
   // perform blocking read into buffer
   uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
-  if (read > 0) {
+  if (read == 2) {
     return rxBuffer[0] + (rxBuffer[1] << 8);
   } else {
     return -1;
@@ -158,6 +158,8 @@ int KeyboardioScanner::readRegister(uint8_t cmd) {
 
   uint8_t data[] = {cmd};
   uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1); // needed to change stopFlag to 1 to get responses from the tiny
+  if(result == I2C_ERROR)
+    return -1;
 
   // needs to be long enough for the slave to respond
   delayMicroseconds(100); 
