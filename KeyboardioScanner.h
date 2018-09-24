@@ -95,6 +95,7 @@ class KeyboardioScanner {
   bool readKeys();
   LEDData_t ledData;
   uint8_t controllerAddress();
+  bool online = false;
 
  private:
   int addr;

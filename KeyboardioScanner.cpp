@@ -194,13 +194,8 @@ bool KeyboardioScanner::readKeys() {
 
   // perform blocking read into buffer
   uint8_t result = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
-  /*
-  if( result == 0 )
-  {
-    twi_disable();
-    twi_init();
-  } else
-  */
+  KeyboardioScanner::online = result ? true : false;
+
   if (rxBuffer[0] == TWI_REPLY_KEYDATA) {
     keyData.rows[0] = rxBuffer[1];
     keyData.rows[1] = rxBuffer[2];
