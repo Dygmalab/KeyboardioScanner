@@ -90,7 +90,7 @@ uint8_t KeyboardioScanner::controllerAddress() {
 // https://www.arduino.cc/en/Reference/WireEndTransmission
 byte KeyboardioScanner::setKeyscanInterval(byte delay) {
   uint8_t data[] = {TWI_CMD_KEYSCAN_INTERVAL, delay};
-  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1);
   return result;
 }
 
@@ -110,7 +110,7 @@ int KeyboardioScanner::readJoint() {
   uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1); // needed to change stopFlag to 1 to get responses from the tiny
 
   // needs to be long enough for the slave to respond
-  delayMicroseconds(100); 
+  delayMicroseconds(40); 
 
   uint8_t rxBuffer[2];
 
@@ -150,7 +150,7 @@ int KeyboardioScanner::readLEDSPIFrequency() {
 // https://www.arduino.cc/en/Reference/WireEndTransmission
 byte KeyboardioScanner::setLEDSPIFrequency(byte frequency) {
   uint8_t data[] = {TWI_CMD_LED_SPI_FREQUENCY, frequency};
-  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1);
   return result;
 }
 
@@ -166,7 +166,7 @@ int KeyboardioScanner::readRegister(uint8_t cmd) {
  //   return -1;
 
   // needs to be long enough for the slave to respond
-  delayMicroseconds(100); 
+  delayMicroseconds(40); 
 
   uint8_t rxBuffer[1];
 
@@ -225,7 +225,7 @@ void KeyboardioScanner::sendLEDBank(byte bank) {
   for (uint8_t i = 0 ; i < LED_BYTES_PER_BANK; i++) {
     data[i + 1] = pgm_read_byte(&gamma8[ledData.bytes[bank][i]]);
   }
-  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1);
   /*
   if( result == 1 )
   {
@@ -243,7 +243,7 @@ void KeyboardioScanner::setAllLEDsTo(cRGB color) {
                     pgm_read_byte(&gamma8[color.g]),
                     pgm_read_byte(&gamma8[color.b])
                    };
-  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1);
 }
 
 void KeyboardioScanner::setOneLEDTo(byte led, cRGB color) {
@@ -253,7 +253,7 @@ void KeyboardioScanner::setOneLEDTo(byte led, cRGB color) {
                     pgm_read_byte(&gamma8[color.g]),
                     pgm_read_byte(&gamma8[color.b])
                    };
-  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 0);
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1);
 
 }
 
