@@ -78,6 +78,7 @@ class KeyboardioScanner {
 
   int readVersion();
   int readSLEDVersion();
+  int readSLEDCurrent();
   int readJoint();
   int readANSI_ISO();
 
@@ -101,7 +102,6 @@ class KeyboardioScanner {
   int addr;
   int ad01;
   keydata_t keyData;
-  bool keyReady = false;
   byte nextLEDBank = 0;
   void sendLEDBank(byte bank);
   int readRegister(uint8_t cmd);
