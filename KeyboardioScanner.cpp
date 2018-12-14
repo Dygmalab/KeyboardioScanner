@@ -17,7 +17,7 @@ uint8_t twi_uninitialized = 1;
 		//in fact we always send data in blocking mode. In case of error return 1.
 		Wire.beginTransmission(addr); // transmit to device addr
 		if(!Wire.write(pData, length)) return I2C_ERROR; // sends data
-		if(!Wire.endTransmission(stopFlag)) return I2C_ERROR;// stop transmitting
+		if(Wire.endTransmission(stopFlag) != 0) return I2C_ERROR;// stop transmitting
 		return I2C_OK;
 	}
 	
@@ -46,7 +46,7 @@ uint8_t twi_uninitialized = 1;
 	void twi_init()
 	{
         Wire.begin();
-        Wire.setClock(400000);
+        Wire.setClock(200000);
 	}
 #endif
 
@@ -56,14 +56,6 @@ KeyboardioScanner::~KeyboardioScanner() {}
 KeyboardioScanner::KeyboardioScanner(byte setAd01) {
   ad01 = setAd01;
   addr = SCANNER_I2C_ADDR_BASE | ad01;
-  // keyReady will be true after a read when there's another key event
-  // already waiting for us
-  keyReady = false;
-  
-/*  if (twi_uninitialized--) {
-    twi_init();
-  }
- */ 
 }
 
 // Returns the relative controller addresss. The expected range is 0-3
@@ -102,30 +94,14 @@ int KeyboardioScanner::readVersion() {
   return readRegister(TWI_CMD_VERSION);
 }
 
-// returns -1 on error, otherwise returns the value of the hall sensor integer
-int KeyboardioScanner::readJoint() {
-  byte return_value = 0;
 
-  uint8_t data[] = {TWI_CMD_JOINED};
-  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1); // needed to change stopFlag to 1 to get responses from the tiny
-
-  // needs to be long enough for the slave to respond
-  delayMicroseconds(40); 
-
-  uint8_t rxBuffer[2];
-
-  // perform blocking read into buffer
-  uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
-  if (read == 2) {
-    return rxBuffer[0] + (rxBuffer[1] << 8);
-  } else {
-    return -1;
-  }
-}
-
-// returns -1 on error, otherwise returns the scanner version integer
+// returns -1 on error, otherwise returns the sled version integer
 int KeyboardioScanner::readSLEDVersion() {
   return readRegister(TWI_CMD_SLED_STATUS);
+}
+// returns -1 on error, otherwise returns the sled current settings
+int KeyboardioScanner::readSLEDCurrent() {
+  return readRegister(TWI_CMD_SLED_CURRENT);
 }
 
 // returns -1 on error, otherwise returns the scanner keyscan interval
@@ -154,6 +130,28 @@ byte KeyboardioScanner::setLEDSPIFrequency(byte frequency) {
   return result;
 }
 
+// returns -1 on error, otherwise returns the value of the hall sensor integer
+int KeyboardioScanner::readJoint() {
+  byte return_value = 0;
+
+  uint8_t data[] = {TWI_CMD_JOINED};
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1); // needed to change stopFlag to 1 to get responses from the tiny
+  if(result == I2C_ERROR)
+     return -1;
+
+  // needs to be long enough for the slave to respond
+  delayMicroseconds(40); 
+
+  uint8_t rxBuffer[2];
+
+  // perform blocking read into buffer
+  uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
+  if (read == 2) {
+    return rxBuffer[0] + (rxBuffer[1] << 8);
+  } else {
+    return -1;
+  }
+}
 
 
 int KeyboardioScanner::readRegister(uint8_t cmd) {
@@ -162,8 +160,8 @@ int KeyboardioScanner::readRegister(uint8_t cmd) {
 
   uint8_t data[] = {cmd};
   uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1); // needed to change stopFlag to 1 to get responses from the tiny
-//  if(result == I2C_ERROR)
- //   return -1;
+  if(result == I2C_ERROR)
+     return -1;
 
   // needs to be long enough for the slave to respond
   delayMicroseconds(40); 
@@ -181,19 +179,13 @@ int KeyboardioScanner::readRegister(uint8_t cmd) {
 }
 
 
-// returns the raw key code from the controller, or -1 on failure.
-// returns true of a key is ready to be read
-bool KeyboardioScanner::moreKeysWaiting() {
-  return keyReady;
-}
-
 // gives information on the key that was just pressed or released.
 bool KeyboardioScanner::readKeys() {
-
   uint8_t rxBuffer[6] = {0,0,0,0,0,0};
 
   // perform blocking read into buffer
   uint8_t result = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
+  // if result isn't 6? this can happens if slave nacks while trying to read
   KeyboardioScanner::online = result ? true : false;
 
   if (rxBuffer[0] == TWI_REPLY_KEYDATA) {
@@ -220,7 +212,8 @@ void KeyboardioScanner::sendLEDData() {
 }
 
 void KeyboardioScanner::sendLEDBank(byte bank) {
-  uint8_t data[LED_BYTES_PER_BANK + 1];
+
+  uint8_t data[LED_BYTES_PER_BANK + 1]; // + 1 for the update LED command itself
   data[0]  = TWI_CMD_LED_BASE + bank;
   for (uint8_t i = 0 ; i < LED_BYTES_PER_BANK; i++) {
     data[i + 1] = pgm_read_byte(&gamma8[ledData.bytes[bank][i]]);
