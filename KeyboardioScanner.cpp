@@ -46,7 +46,7 @@ uint8_t twi_uninitialized = 1;
 	void twi_init()
 	{
         Wire.begin();
-        Wire.setClock(200000);
+        Wire.setClock(400000);
 	}
 #endif
 
@@ -102,6 +102,11 @@ int KeyboardioScanner::readSLEDVersion() {
 // returns -1 on error, otherwise returns the sled current settings
 int KeyboardioScanner::readSLEDCurrent() {
   return readRegister(TWI_CMD_SLED_CURRENT);
+}
+byte KeyboardioScanner::setSLEDCurrent(byte current) {
+  uint8_t data[] = {TWI_CMD_SLED_CURRENT, current};
+  uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1);
+  return result;
 }
 
 // returns -1 on error, otherwise returns the scanner keyscan interval

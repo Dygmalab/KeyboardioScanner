@@ -79,6 +79,7 @@ class KeyboardioScanner {
   int readVersion();
   int readSLEDVersion();
   int readSLEDCurrent();
+  byte setSLEDCurrent(byte current);
   int readJoint();
   int readANSI_ISO();
 
