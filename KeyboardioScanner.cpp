@@ -46,7 +46,7 @@ uint8_t twi_uninitialized = 1;
 	void twi_init()
 	{
         Wire.begin();
-        Wire.setClock(400000);
+        Wire.setClock(200000);
 	}
 #endif
 
