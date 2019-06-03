@@ -216,7 +216,7 @@ void KeyboardioScanner::sendLEDData() {
   }
 }
 
-void KeyboardioScanner::sendLEDBank(byte bank) {
+void KeyboardioScanner::sendLEDBank(uint8_t bank) {
 
   uint8_t data[LED_BYTES_PER_BANK + 1]; // + 1 for the update LED command itself
   data[0]  = TWI_CMD_LED_BASE + bank;

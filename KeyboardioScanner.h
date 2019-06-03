@@ -36,14 +36,16 @@ const uint8_t PROGMEM gamma8[] = {
 
 #define LEDS_PER_HAND 72
 #define LPH LEDS_PER_HAND
-#define LED_BYTES_PER_BANK 24 
-//sizeof(cRGB)  * (LEDS_PER_HAND+LEDS_PER_UNDERGLOW)/LED_BANKS
+#define LEDS_PER_BANK 8
+#define LED_BYTES_PER_BANK (sizeof(cRGB) * LEDS_PER_BANK)
 
 typedef union {
   cRGB leds[LEDS_PER_HAND];
   byte bytes[LED_BANKS][LED_BYTES_PER_BANK];
 } LEDData_t;
 
+// return what bank the led is in
+#define LED_TO_BANK(led) (led / LEDS_PER_BANK)
 
 // Same datastructure as on the other side
 typedef union {
@@ -91,6 +93,7 @@ class KeyboardioScanner {
 
   bool moreKeysWaiting();
   void sendLEDData();
+  void sendLEDBank(uint8_t bank);
   void setOneLEDTo(byte led, cRGB color);
   void setAllLEDsTo(cRGB color);
   keydata_t getKeyData();
@@ -103,8 +106,7 @@ class KeyboardioScanner {
   int addr;
   int ad01;
   keydata_t keyData;
-  byte nextLEDBank = 0;
-  void sendLEDBank(byte bank);
+  uint8_t nextLEDBank = 0;
   int readRegister(uint8_t cmd);
 };
 
