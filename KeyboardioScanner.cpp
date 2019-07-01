@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "KeyboardioScanner.h"
 #include <Wire.h>
+#include "crc16.h"
 
 
 
@@ -16,6 +17,22 @@ uint8_t twi_uninitialized = 1;
 	uint8_t twi_writeTo(uint8_t addr, uint8_t* pData, size_t length, uint8_t blockingFlag, uint8_t stopFlag) {
 		//in fact we always send data in blocking mode. In case of error return 1.
 		Wire.beginTransmission(addr); // transmit to device addr
+
+        // calc cksum
+        uint16_t crc16 = 0xffff;
+        uint8_t *bufferPtr;
+        bufferPtr = pData;
+        for (uint8_t i = 0; i < length; i++) {
+            crc16 = _crc16_update(crc16, *bufferPtr);
+            bufferPtr++;
+        }
+        
+        // append cksum high byte and low byte
+        pData[length] = crc16 >> 8;
+        pData[length + 1] = crc16;
+        
+        length += 2;  // add 2 to the length for the cksum
+
 		if(!Wire.write(pData, length)) return I2C_ERROR; // sends data
 		if(Wire.endTransmission(stopFlag) != 0) return I2C_ERROR;// stop transmitting
 		return I2C_OK;
@@ -24,11 +41,14 @@ uint8_t twi_uninitialized = 1;
 	uint8_t twi_readFrom(uint8_t addr, uint8_t* pData, size_t length, uint8_t stopFlag) {
 		uint8_t counter = 0;
 		uint32_t timeout;
-		if(!Wire.requestFrom(addr, length, stopFlag)){
+        uint8_t *bufferPtr;
+        bufferPtr = pData;
+
+		if(!Wire.requestFrom(addr, length + 2, stopFlag)){ // + 2 for the cksum
 			//in case slave is not responding - return 0 (0 length of received data).
 			return 0;
 		}
-		while(Wire.available() && (length > 0))    // slave may send less than requested
+		while(Wire.available() && (length + 2 > 0))    // slave may send less than requested
 		{ 
 			// receive a byte in blocking mode
 			*pData = Wire.read(); 
@@ -36,7 +56,32 @@ uint8_t twi_uninitialized = 1;
 			length--;
 			counter++;
 		}
-		return counter;
+
+        // cksum
+        if(counter < 2) // must be more than 2 to have a cksum
+            return 0;
+
+        uint16_t crc16 = 0xffff;
+        uint16_t rx_cksum = (bufferPtr[counter - 2] << 8) + bufferPtr[counter - 1];
+
+        for (uint8_t i = 0; i < counter - 2; i++) {
+            crc16 = _crc16_update(crc16, *bufferPtr);
+            bufferPtr++;
+        }
+
+        // check received CRC16
+        if (crc16 != rx_cksum)
+        {
+            SerialUSB.print("cksum incorrect (local, sent): ");
+            SerialUSB.print(crc16, HEX);
+            SerialUSB.print(",");
+            SerialUSB.println(rx_cksum, HEX);
+            SerialUSB.print("packet len: ");
+            SerialUSB.println(counter);
+            return 0;
+        }
+
+		return counter - 2; // subtract the 2 bytes of the cksum
 	}
 	
 	void twi_disable(void)
@@ -186,12 +231,17 @@ int KeyboardioScanner::readRegister(uint8_t cmd) {
 
 // gives information on the key that was just pressed or released.
 bool KeyboardioScanner::readKeys() {
+  delay(5);
   uint8_t rxBuffer[6] = {0,0,0,0,0,0};
 
   // perform blocking read into buffer
   uint8_t result = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
   // if result isn't 6? this can happens if slave nacks while trying to read
-  KeyboardioScanner::online = result ? true : false;
+  KeyboardioScanner::online = (result == 6) ? true : false;
+
+  if(result != 6)
+    // could also try reset pressed keys here
+    return false;
 
   if (rxBuffer[0] == TWI_REPLY_KEYDATA) {
     keyData.rows[0] = rxBuffer[1];
@@ -218,6 +268,7 @@ void KeyboardioScanner::sendLEDData() {
 
 void KeyboardioScanner::sendLEDBank(uint8_t bank) {
 
+  delay(5);
   uint8_t data[LED_BYTES_PER_BANK + 1]; // + 1 for the update LED command itself
   data[0]  = TWI_CMD_LED_BASE + bank;
   for (uint8_t i = 0 ; i < LED_BYTES_PER_BANK; i++) {
