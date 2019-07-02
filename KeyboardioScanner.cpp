@@ -23,7 +23,8 @@ uint8_t twi_uninitialized = 1;
         uint8_t *bufferPtr;
         bufferPtr = pData;
         for (uint8_t i = 0; i < length; i++) {
-            crc16 = _crc16_update(crc16, *bufferPtr);
+            //crc16 = _crc16_update(crc16, *bufferPtr);
+            crc16 = _crc_ccitt_update(crc16, *bufferPtr);
             bufferPtr++;
         }
         
@@ -59,7 +60,8 @@ uint8_t twi_uninitialized = 1;
         uint16_t crc16 = 0xffff;
         uint16_t rx_cksum = (Wire.read() << 8) + Wire.read();
         for (uint8_t i = 0; i < length; i++) {
-            crc16 = _crc16_update(crc16, *bufferPtr);
+            //crc16 = _crc16_update(crc16, *bufferPtr);
+            crc16 = _crc_ccitt_update(crc16, *bufferPtr);
             bufferPtr++;
         }
 
