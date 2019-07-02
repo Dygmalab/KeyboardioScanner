@@ -10,7 +10,6 @@
 
 uint8_t twi_uninitialized = 1;
 
-
 #ifdef __SAMD21G18A__
 	#define I2C_ERROR	(1)
 	#define I2C_OK		(0)
@@ -39,7 +38,7 @@ uint8_t twi_uninitialized = 1;
 		return I2C_OK;
 	}
 	
-	uint8_t twi_readFrom(uint8_t addr, uint8_t* pData, size_t length, uint8_t stopFlag) {
+	uint8_t twi_readFrom(uint8_t addr, uint8_t* pData, size_t length, uint8_t stopFlag, uint8_t* errors) {
 		uint8_t counter = 0;
 		uint32_t timeout;
         uint8_t *bufferPtr;
@@ -68,7 +67,7 @@ uint8_t twi_uninitialized = 1;
         // check received CRC16
         if (crc16 != rx_cksum)
         {
-            //KeyboardioScanner::crc_errors ++;
+            (*errors) ++;
             SerialUSB.print("addr:");
             SerialUSB.print(addr, HEX);
             SerialUSB.print(" cksum incorrect (local, sent): ");
@@ -194,7 +193,7 @@ int KeyboardioScanner::readJoint() {
   uint8_t rxBuffer[2];
 
   // perform blocking read into buffer
-  uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
+  uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true, &(KeyboardioScanner::crc_errors));
   if (read == 2) {
     return rxBuffer[0] + (rxBuffer[1] << 8);
   } else {
@@ -218,7 +217,7 @@ int KeyboardioScanner::readRegister(uint8_t cmd) {
   uint8_t rxBuffer[1];
 
   // perform blocking read into buffer
-  uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
+  uint8_t read = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true, &(KeyboardioScanner::crc_errors));
   if (read > 0) {
     return rxBuffer[0];
   } else {
@@ -233,7 +232,7 @@ bool KeyboardioScanner::readKeys() {
   uint8_t rxBuffer[6] = {0,0,0,0,0,0};
 
   // perform blocking read into buffer
-  uint8_t result = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true);
+  uint8_t result = twi_readFrom(addr, rxBuffer, ELEMENTS(rxBuffer), true, &(KeyboardioScanner::crc_errors));
   // if result isn't 6? this can happens if slave nacks while trying to read
   KeyboardioScanner::online = (result == 6) ? true : false;
 
