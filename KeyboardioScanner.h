@@ -90,6 +90,12 @@ class KeyboardioScanner {
 
   byte setLEDSPIFrequency(byte frequency);
   int readLEDSPIFrequency();
+/*
+  void twi_init();
+  void twi_disable(void);
+  uint8_t twi_readFrom(uint8_t addr, uint8_t* pData, size_t length, uint8_t stopFlag);
+  uint8_t twi_writeTo(uint8_t addr, uint8_t* pData, size_t length, uint8_t blockingFlag, uint8_t stopFlag);
+  */
 
   bool moreKeysWaiting();
   void sendLEDData();
@@ -101,6 +107,7 @@ class KeyboardioScanner {
   LEDData_t ledData;
   uint8_t controllerAddress();
   bool online = false;
+  uint8_t crc_errors = 0;
 
  private:
   int addr;

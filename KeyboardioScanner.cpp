@@ -27,13 +27,13 @@ uint8_t twi_uninitialized = 1;
             bufferPtr++;
         }
         
-        // append cksum high byte and low byte
-        pData[length] = crc16 >> 8;
-        pData[length + 1] = crc16;
-        
-        length += 2;  // add 2 to the length for the cksum
+        // make cksum high byte and low byte
+        uint8_t crc_bytes[2];
+        crc_bytes[0] = crc16 >> 8;
+        crc_bytes[1] = crc16;
 
 		if(!Wire.write(pData, length)) return I2C_ERROR; // sends data
+		if(!Wire.write(crc_bytes, 2)) return I2C_ERROR; // sends cksum
 		if(Wire.endTransmission(stopFlag) != 0) return I2C_ERROR;// stop transmitting
 		return I2C_OK;
 	}
@@ -48,23 +48,17 @@ uint8_t twi_uninitialized = 1;
 			//in case slave is not responding - return 0 (0 length of received data).
 			return 0;
 		}
-		while(Wire.available() && (length + 2 > 0))    // slave may send less than requested
+		while(counter < length)
 		{ 
 			// receive a byte in blocking mode
 			*pData = Wire.read(); 
 			pData++;
-			length--;
 			counter++;
 		}
 
-        // cksum
-        if(counter < 2) // must be more than 2 to have a cksum
-            return 0;
-
         uint16_t crc16 = 0xffff;
-        uint16_t rx_cksum = (bufferPtr[counter - 2] << 8) + bufferPtr[counter - 1];
-
-        for (uint8_t i = 0; i < counter - 2; i++) {
+        uint16_t rx_cksum = (Wire.read() << 8) + Wire.read();
+        for (uint8_t i = 0; i < length; i++) {
             crc16 = _crc16_update(crc16, *bufferPtr);
             bufferPtr++;
         }
@@ -72,7 +66,10 @@ uint8_t twi_uninitialized = 1;
         // check received CRC16
         if (crc16 != rx_cksum)
         {
-            SerialUSB.print("cksum incorrect (local, sent): ");
+            //KeyboardioScanner::crc_errors ++;
+            SerialUSB.print("addr:");
+            SerialUSB.print(addr, HEX);
+            SerialUSB.print(" cksum incorrect (local, sent): ");
             SerialUSB.print(crc16, HEX);
             SerialUSB.print(",");
             SerialUSB.println(rx_cksum, HEX);
@@ -81,7 +78,7 @@ uint8_t twi_uninitialized = 1;
             return 0;
         }
 
-		return counter - 2; // subtract the 2 bytes of the cksum
+		return length;
 	}
 	
 	void twi_disable(void)
@@ -231,7 +228,6 @@ int KeyboardioScanner::readRegister(uint8_t cmd) {
 
 // gives information on the key that was just pressed or released.
 bool KeyboardioScanner::readKeys() {
-  delay(5);
   uint8_t rxBuffer[6] = {0,0,0,0,0,0};
 
   // perform blocking read into buffer
@@ -267,21 +263,12 @@ void KeyboardioScanner::sendLEDData() {
 }
 
 void KeyboardioScanner::sendLEDBank(uint8_t bank) {
-
-  delay(5);
   uint8_t data[LED_BYTES_PER_BANK + 1]; // + 1 for the update LED command itself
   data[0]  = TWI_CMD_LED_BASE + bank;
   for (uint8_t i = 0 ; i < LED_BYTES_PER_BANK; i++) {
     data[i + 1] = pgm_read_byte(&gamma8[ledData.bytes[bank][i]]);
   }
   uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1);
-  /*
-  if( result == 1 )
-  {
-    twi_disable();
-    twi_init();
-  }
-  */
 }
 
 
@@ -303,7 +290,4 @@ void KeyboardioScanner::setOneLEDTo(byte led, cRGB color) {
                     pgm_read_byte(&gamma8[color.b])
                    };
   uint8_t result = twi_writeTo(addr, data, ELEMENTS(data), 1, 1);
-
 }
-
-
