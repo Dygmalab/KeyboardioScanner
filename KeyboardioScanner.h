@@ -4,7 +4,8 @@
 #include "wire-protocol-constants.h"
 
 #ifdef __SAMD21G18A__
-	void twi_init(); // allow to be called by the Raise hardware setup
+	void twi_init(uint16_t clock_khz); // allow to be called by the Raise hardware setup
+	void twi_disable(void);
 #endif
 
 struct cRGB {

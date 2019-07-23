@@ -86,10 +86,10 @@ uint8_t twi_uninitialized = 1;
 	{
 		Wire.end();
 	}
-	void twi_init()
+	void twi_init(uint16_t clock_khz)
 	{
         Wire.begin();
-        Wire.setClock(200000);
+        Wire.setClock(clock_khz * 1000);
 	}
 #endif
 
